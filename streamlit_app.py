@@ -1,51 +1,49 @@
-
-import streamlit as st
+import os
 import requests
+import streamlit as st
+
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000"
+)
 
 st.set_page_config(page_title="Iris Classifier")
 
 st.title("🌸 Iris Flower Classifier")
 
-st.write("Enter flower measurements below.")
-
-sepal_length = st.number_input(
-    "Sepal Length",
-    value=5.1
+response = requests.post(
+    f"{API_URL}/predict",
+    json=payload
 )
 
-sepal_width = st.number_input(
-    "Sepal Width",
-    value=3.5
-)
+try:
+    health = requests.get(f"{API_URL}/health", timeout=5)
 
-petal_length = st.number_input(
-    "Petal Length",
-    value=1.4
-)
+    if health.status_code == 200:
+        st.success("🟢 API Connected")
+    else:
+        st.error("🔴 API Error")
 
-petal_width = st.number_input(
-    "Petal Width",
-    value=0.2
-)
+except Exception:
+    st.error("🔴 API Offline")
 
 if st.button("Predict"):
 
-    payload = {
-        "sepal_length": sepal_length,
-        "sepal_width": sepal_width,
-        "petal_length": petal_length,
-        "petal_width": petal_width
-    }
-
     response = requests.post(
-        "http://127.0.0.1:8000/predict",
+        f"{API_URL}/predict",
         json=payload
     )
 
-    result = response.json()
+    if response.status_code == 200:
 
-    st.success(
-        f"Prediction: {result['species']}"
-    )
+        result = response.json()
 
-    st.json(result)
+        st.success(
+            f"Prediction: {result['species']}"
+        )
+
+        st.json(result)
+
+    else:
+
+        st.error("Prediction failed.")
